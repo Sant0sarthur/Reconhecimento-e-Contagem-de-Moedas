@@ -4,10 +4,8 @@ from keras.models import load_model
 
 video = cv2.VideoCapture(0,cv2.CAP_DSHOW) # Inicializando camera
 model = load_model ('keras_model.h5', compile = False)
-data = np.array(shape = (1,224,224,3), dtype= np.float32)
-classes = ["1 Real", "25 Centavos", "50 Centavos"]
-
-
+data = np.ndarray(shape = (1,224,224,3), dtype= np.float32)
+classes = ["1 Real", "50 Centavos", "25 Centavos"]
 
 def preProcess(img): 
     imgPre = cv2.GaussianBlur(img, (5,5), 3)
@@ -18,7 +16,7 @@ def preProcess(img):
     return imgPre
 
 def detectarMoedas(img): 
-    imgMoeda = cv2.resize(img(224, 224))
+    imgMoeda = cv2.resize(img, (224, 224))
     imgMoeda = np.asarray(imgMoeda)
     imgMoedaNormalize = (imgMoeda.astype(np.float32)/127)-1
     data[0] = imgMoedaNormalize
@@ -30,8 +28,9 @@ def detectarMoedas(img):
 
 while True: 
     _,img = video.read()
-    img = cv2.resize(img,(500, 380))
+    img = cv2.resize(img,(640, 480))
     imgPre  = preProcess (img)
+    qtd = 0
     countors, hi = cv2.findContours(imgPre, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
     for cnt in countors: 
@@ -41,6 +40,15 @@ while True:
             cv2.rectangle(img, (x, y), (x+w, y+h), (0,255,0), 2)   
             recorte = img[y:y + h, x:x+w]
             #cv2.imwrite() -- Sempre q precionar, salva o recorte
+            classe, confianca = detectarMoedas(recorte)
+            if confianca > 0.7:
+                cv2.putText(img, str(classe), (x,y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2 )
+                if classe == "1 Real": qtd +=1
+                if classe == "25 Centavos": qtd +=0.25
+                if classe == "50 Centavos": qtd +=1
+
+    cv2.rectangle(img,(430,30),(600,80),(0,0,255),-1)
+    cv2.putText(img,f'R$ {qtd}',(440,67),cv2.FONT_HERSHEY_SIMPLEX,1.2,(255,255,255),2)
 
     cv2.imshow("window_name1", img) 
     cv2.imshow("window_name2", imgPre) 
